@@ -55,6 +55,7 @@ class SetupCog(commands.Cog):
             f"**Income:** ${monthly_income:,.2f}\n"
             f"**Savings goal:** ${savings_goal:,.2f}",
             ephemeral=True,
+            delete_after=60,
         )
 
     @app_commands.command(name="add_account", description="Add a bank account to track")
@@ -80,7 +81,7 @@ class SetupCog(commands.Cog):
     ):
         if len(last_four) != 4 or not last_four.isdigit():
             await interaction.response.send_message(
-                "Last four must be exactly 4 digits.", ephemeral=True
+                "Last four must be exactly 4 digits.", ephemeral=True, delete_after=60
             )
             return
 
@@ -92,7 +93,7 @@ class SetupCog(commands.Cog):
 
             if not user:
                 await interaction.response.send_message(
-                    "Run `/setup` first to create your profile.", ephemeral=True
+                    "Run `/setup` first to create your profile.", ephemeral=True, delete_after=60
                 )
                 return
 
@@ -120,6 +121,7 @@ class SetupCog(commands.Cog):
             f"**{bank_name}** {card_type.name} ****{last_four}\n"
             f"**Balance:** ${initial_balance:,.2f}",
             ephemeral=True,
+            delete_after=60,
         )
 
 

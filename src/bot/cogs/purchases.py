@@ -94,7 +94,7 @@ class PurchasesCog(commands.Cog):
         user = await _get_user(interaction.user.id)
         if not user:
             await interaction.response.send_message(
-                "Run `/setup` first.", ephemeral=True
+                "Run `/setup` first.", ephemeral=True, delete_after=60
             )
             return
 
@@ -104,7 +104,7 @@ class PurchasesCog(commands.Cog):
 
             if not acc or acc.user_id != user.id:
                 await interaction.response.send_message(
-                    "Invalid account. Use `/add_account` first.", ephemeral=True
+                    "Invalid account. Use `/add_account` first.", ephemeral=True, delete_after=60
                 )
                 return
 
@@ -152,7 +152,7 @@ class PurchasesCog(commands.Cog):
         user = await _get_user(interaction.user.id)
         if not user:
             await interaction.response.send_message(
-                "Run `/setup` first.", ephemeral=True
+                "Run `/setup` first.", ephemeral=True, delete_after=60
             )
             return
 
@@ -162,7 +162,7 @@ class PurchasesCog(commands.Cog):
 
             if not acc or acc.user_id != user.id:
                 await interaction.response.send_message(
-                    "Invalid account.", ephemeral=True
+                    "Invalid account.", ephemeral=True, delete_after=60
                 )
                 return
 
@@ -211,7 +211,7 @@ class PurchasesCog(commands.Cog):
             )
             if existing.scalar_one_or_none():
                 await interaction.response.send_message(
-                    f"Category **{name}** already exists.", ephemeral=True
+                    f"Category **{name}** already exists.", ephemeral=True, delete_after=60
                 )
                 return
 
@@ -226,7 +226,8 @@ class PurchasesCog(commands.Cog):
         logger.info(f"Category added: {icon} {name}")
         budget_text = f"\n💵 Budget: ${monthly_budget:,.2f}" if monthly_budget else ""
         await interaction.response.send_message(
-            f"Category added! {icon} **{name}**{budget_text}"
+            f"Category added! {icon} **{name}**{budget_text}",
+            delete_after=60,
         )
 
     @app_commands.command(name="recurring", description="Add a recurring expense or transfer")
@@ -253,14 +254,14 @@ class PurchasesCog(commands.Cog):
     ):
         if not 1 <= billing_day <= 31:
             await interaction.response.send_message(
-                "Billing day must be between 1 and 31.", ephemeral=True
+                "Billing day must be between 1 and 31.", ephemeral=True, delete_after=60
             )
             return
 
         user = await _get_user(interaction.user.id)
         if not user:
             await interaction.response.send_message(
-                "Run `/setup` first.", ephemeral=True
+                "Run `/setup` first.", ephemeral=True, delete_after=60
             )
             return
 
@@ -270,7 +271,7 @@ class PurchasesCog(commands.Cog):
 
             if not acc or acc.user_id != user.id:
                 await interaction.response.send_message(
-                    "Invalid source account.", ephemeral=True
+                    "Invalid source account.", ephemeral=True, delete_after=60
                 )
                 return
 
@@ -279,7 +280,7 @@ class PurchasesCog(commands.Cog):
                 dest = await session.get(Account, destination)
                 if not dest or dest.user_id != user.id:
                     await interaction.response.send_message(
-                        "Invalid destination account.", ephemeral=True
+                        "Invalid destination account.", ephemeral=True, delete_after=60
                     )
                     return
 
@@ -307,7 +308,8 @@ class PurchasesCog(commands.Cog):
             f"🏦 {acc.bank_name} {acc.card_type} ****{acc.last_four}{dest_text}\n"
             f"🏷️ {cat_display}\n"
             f"📅 Day {billing_day} of each month\n"
-            f"{auto_text}"
+            f"{auto_text}",
+            delete_after=60,
         )
 
 
@@ -326,7 +328,7 @@ class PurchasesCog(commands.Cog):
         user = await _get_user(interaction.user.id)
         if not user:
             await interaction.response.send_message(
-                "Run `/setup` first.", ephemeral=True
+                "Run `/setup` first.", ephemeral=True, delete_after=60
             )
             return
 
@@ -334,7 +336,7 @@ class PurchasesCog(commands.Cog):
             rec = await session.get(RecurringExpense, expense)
             if not rec or rec.user_id != user.id:
                 await interaction.response.send_message(
-                    "Invalid recurring expense.", ephemeral=True
+                    "Invalid recurring expense.", ephemeral=True, delete_after=60
                 )
                 return
 

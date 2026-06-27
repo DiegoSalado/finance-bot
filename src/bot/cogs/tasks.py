@@ -286,7 +286,7 @@ class TasksCog(commands.Cog):
                     )
 
                 embed.set_footer(text=f"📅 {days_left} days left in the month")
-                await channel.send(embed=embed)
+                await channel.send(embed=embed, delete_after=900)
 
     # ── Weekly report with chart ──
 
@@ -318,7 +318,8 @@ class TasksCog(commands.Cog):
                 if not cat_spending:
                     await channel.send(
                         f"📊 **Weekly Report — {week_start.strftime('%d/%m')} to "
-                        f"{today.strftime('%d/%m/%Y')}**\nNo spending this week! 🎉"
+                        f"{today.strftime('%d/%m/%Y')}**\nNo spending this week! 🎉",
+                        delete_after=900,
                     )
                     continue
 
@@ -326,7 +327,8 @@ class TasksCog(commands.Cog):
                 if not cat_spending:
                     await channel.send(
                         f"📊 **Weekly Report — {week_start.strftime('%d/%m')} to "
-                        f"{today.strftime('%d/%m/%Y')}**\nNo spending this week! 🎉"
+                        f"{today.strftime('%d/%m/%Y')}**\nNo spending this week! 🎉",
+                        delete_after=900,
                     )
                     continue
 
@@ -381,6 +383,7 @@ class TasksCog(commands.Cog):
                     f"📊 **Weekly Report**\n\n"
                     f"💰 **Secondary Account Balances:**\n{balance_lines}",
                     file=discord.File(buf, filename="weekly_spending.png"),
+                    delete_after=900,
                 )
 
     # ── Monthly report with charts ──
@@ -427,7 +430,8 @@ class TasksCog(commands.Cog):
                 if not expenses:
                     await channel.send(
                         f"📊 **Monthly Report — {month_start.strftime('%B %Y')}**\n"
-                        "No spending recorded!"
+                        "No spending recorded!",
+                        delete_after=900,
                     )
                     continue
 
@@ -527,7 +531,7 @@ class TasksCog(commands.Cog):
                         ax.spines[spine].set_color("#555555")
 
                 timeline_file = self._make_chart(draw_timeline, "timeline.png")
-                await channel.send(file=timeline_file)
+                await channel.send(file=timeline_file, delete_after=900)
 
                 # ── Chart 2: Category pie ──
 
@@ -556,7 +560,7 @@ class TasksCog(commands.Cog):
                         )
 
                     pie_file = self._make_chart(draw_pie, "categories.png")
-                    await channel.send(file=pie_file)
+                    await channel.send(file=pie_file, delete_after=900)
 
                 # ── Text summary embed ──
 
@@ -631,7 +635,7 @@ class TasksCog(commands.Cog):
                     inline=False,
                 )
 
-                await channel.send(embed=embed)
+                await channel.send(embed=embed, delete_after=900)
 
 
     @app_commands.command(name="report", description="Generate a report on demand")
@@ -642,7 +646,7 @@ class TasksCog(commands.Cog):
         app_commands.Choice(name="Month", value="month"),
     ])
     async def report(self, interaction: discord.Interaction, period: app_commands.Choice[str]):
-        await interaction.response.send_message(f"Generating **{period.name}** report...", ephemeral=True)
+        await interaction.response.send_message(f"Generating **{period.name}** report...", ephemeral=True, delete_after=60)
         channel = interaction.channel
 
         today = date.today()
