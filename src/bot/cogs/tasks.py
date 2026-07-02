@@ -57,6 +57,7 @@ class TasksCog(commands.Cog):
 
         registered = await self._auto_register_recurring()
         deposited = await self._deposit_income()
+        credit_paid = await self._pay_credit_cards()
 
         if registered:
             lines = [f"• {r.title} — ${r.amount:,.2f}" for r in registered]
@@ -69,6 +70,16 @@ class TasksCog(commands.Cog):
             for _, amount, acc_name in deposited:
                 await channel.send(
                     f"💵 **Income deposited:** ${amount:,.2f} → {acc_name}"
+                )
+
+        if credit_paid:
+            for credit_acc, source_acc, debt in credit_paid:
+                await channel.send(
+                    f"💳 **Credit card payment processed!**\n"
+                    f"• {credit_acc.bank_name} Credit ****{credit_acc.last_four} — "
+                    f"**${debt:,.2f}** paid → balance reset to $0.00\n"
+                    f"• Source: {source_acc.bank_name} {source_acc.card_type} "
+                    f"****{source_acc.last_four} → **${source_acc.current_balance:,.2f}**"
                 )
 
         await self._send_daily_report(channel)
@@ -184,6 +195,72 @@ class TasksCog(commands.Cog):
 
             await session.commit()
         return deposited
+
+    # ── Credit card auto-payment ──
+
+    async def _pay_credit_cards(self) -> list[tuple]:
+        today = date.today()
+        paid = []
+
+        async with async_session() as session:
+            result = await session.execute(
+                select(Account)
+                .where(Account.card_type == "credit")
+                .where(Account.payment_day == today.day)
+                .where(Account.payment_source_account_id.isnot(None))
+            )
+            credit_accounts = result.scalars().all()
+
+            for credit_acc in credit_accounts:
+                debt = Decimal(str(credit_acc.current_balance))
+                if debt >= 0:
+                    continue
+
+                # Dedup: only one payment per credit account per month
+                existing = (
+                    await session.execute(
+                        select(BalanceSnapshot)
+                        .where(BalanceSnapshot.account_id == credit_acc.id)
+                        .where(func.date(BalanceSnapshot.recorded_at) >= today.replace(day=1))
+                        .where(BalanceSnapshot.notes == "credit_payment")
+                    )
+                ).scalar_one_or_none()
+                if existing:
+                    continue
+
+                source = await session.get(Account, credit_acc.payment_source_account_id)
+                if not source:
+                    continue
+
+                payment_amount = abs(debt)
+                source.current_balance -= payment_amount
+                credit_acc.current_balance = Decimal(0)
+
+                session.add(
+                    BalanceSnapshot(
+                        account_id=credit_acc.id,
+                        balance=Decimal(0),
+                        notes="credit_payment",
+                    )
+                )
+                session.add(
+                    Purchase(
+                        user_id=credit_acc.user_id,
+                        account_id=source.id,
+                        category_id=None,
+                        title=f"Credit card payment — {credit_acc.bank_name} ****{credit_acc.last_four}",
+                        amount=payment_amount,
+                        purchase_date=today,
+                        is_income=False,
+                    )
+                )
+                session.add(source)
+                session.add(credit_acc)
+                paid.append((credit_acc, source, payment_amount))
+
+            await session.commit()
+            logger.info(f"Auto-paid {len(paid)} credit card(s)")
+        return paid
 
     # ── Daily report ──
 

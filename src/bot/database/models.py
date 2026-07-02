@@ -48,12 +48,15 @@ class Account(Base):
     initial_balance: Mapped[float] = mapped_column(Numeric(12, 2), nullable=False, server_default="0")
     current_balance: Mapped[float] = mapped_column(Numeric(12, 2), nullable=False, server_default="0")
     track_monthly_metrics: Mapped[bool] = mapped_column(Boolean, server_default="true")
+    payment_day: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    payment_source_account_id: Mapped[int | None] = mapped_column(ForeignKey("accounts.id"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     user: Mapped["User"] = relationship(back_populates="accounts", foreign_keys=[user_id])
     balance_snapshots: Mapped[list["BalanceSnapshot"]] = relationship(back_populates="account")
     purchases: Mapped[list["Purchase"]] = relationship(back_populates="account")
     recurring_expenses: Mapped[list["RecurringExpense"]] = relationship(back_populates="account", foreign_keys="RecurringExpense.account_id")
+    payment_source: Mapped["Account | None"] = relationship(foreign_keys="Account.payment_source_account_id")
 
 
 class BalanceSnapshot(Base):
