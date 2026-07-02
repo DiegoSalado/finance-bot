@@ -27,6 +27,26 @@ async def _payment_source_autocomplete(interaction: discord.Interaction, current
         if current.lower() in f"{a.bank_name} {a.last_four}".lower()
     ][:25]
 
+
+async def _credit_account_autocomplete(interaction: discord.Interaction, current: str):
+    async with async_session() as session:
+        result = await session.execute(
+            select(Account)
+            .join(User, Account.user_id == User.id)
+            .where(User.discord_user_id == interaction.user.id)
+            .where(Account.card_type == "credit")
+        )
+        accounts = result.scalars().all()
+    return [
+        app_commands.Choice(
+            name=f"{a.bank_name} ****{a.last_four}",
+            value=a.id,
+        )
+        for a in accounts
+        if current.lower() in f"{a.bank_name} {a.last_four}".lower()
+    ][:25]
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -166,6 +186,66 @@ class SetupCog(commands.Cog):
             f"**{bank_name}** {card_type.name} ****{last_four}\n"
             f"**Balance:** ${initial_balance:,.2f}"
             f"{payment_text}",
+            ephemeral=True,
+            delete_after=60,
+        )
+
+
+    @app_commands.command(name="set_credit_payment", description="Set or update billing day and payment source for a credit card")
+    @app_commands.describe(
+        account="Credit card to update",
+        payment_day="Day of month the card is billed (1–31)",
+        payment_source="Account that pays this credit card bill",
+    )
+    @app_commands.autocomplete(account=_credit_account_autocomplete, payment_source=_payment_source_autocomplete)
+    async def set_credit_payment(
+        self,
+        interaction: discord.Interaction,
+        account: int,
+        payment_day: int,
+        payment_source: int,
+    ):
+        if not (1 <= payment_day <= 31):
+            await interaction.response.send_message(
+                "Payment day must be between 1 and 31.", ephemeral=True, delete_after=60
+            )
+            return
+
+        async with async_session() as session:
+            result = await session.execute(
+                select(User).where(User.discord_user_id == interaction.user.id)
+            )
+            user = result.scalar_one_or_none()
+            if not user:
+                await interaction.response.send_message(
+                    "Run `/setup` first.", ephemeral=True, delete_after=60
+                )
+                return
+
+            acc = await session.get(Account, account)
+            if not acc or acc.user_id != user.id or acc.card_type != "credit":
+                await interaction.response.send_message(
+                    "Invalid credit card account.", ephemeral=True, delete_after=60
+                )
+                return
+
+            src = await session.get(Account, payment_source)
+            if not src or src.user_id != user.id:
+                await interaction.response.send_message(
+                    "Invalid payment source account.", ephemeral=True, delete_after=60
+                )
+                return
+
+            acc.payment_day = payment_day
+            acc.payment_source_account_id = payment_source
+            session.add(acc)
+            await session.commit()
+
+        logger.info(f"Credit payment updated: {acc.bank_name} ****{acc.last_four} → day {payment_day}")
+        await interaction.response.send_message(
+            f"Updated! 💳 **{acc.bank_name} ****{acc.last_four}**\n"
+            f"📅 Billed on day **{payment_day}** of each month\n"
+            f"🏦 Paid from: **{src.bank_name} {src.card_type} ****{src.last_four}**",
             ephemeral=True,
             delete_after=60,
         )
