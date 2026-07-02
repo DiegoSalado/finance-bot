@@ -8,7 +8,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision = "0006_add_credit_payment_fields"
-down_revision = "0005_add_is_income_to_purchases"
+down_revision = "0005"
 branch_labels = None
 depends_on = None
 
